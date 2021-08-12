@@ -1,0 +1,108 @@
+﻿@page "/Chat"
+
+@using SEP3_FrontEnd.Models
+@using Newtonsoft.Json;
+@using System.Text;
+
+
+
+@inject IHttpClientFactory _clientFactory
+
+
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<h3>Chat</h3>
+        
+        <div class="panel-footer">
+            <div class="input-group" id="myForm">
+                <div class="form-group">
+                    <label class="control-label">Sender</label>
+                    <br />
+                    <input placeholder="Sender" @bind="sender" />
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Receiver</label>
+                    <br />
+                    <input placeholder="Receiver" @bind="receiver" />
+                </div>
+                <div class="form-group">
+                    <input id="txtMessageInput"
+                           @bind="body"
+                           type="text"
+                           class="form-control input-sm chat_input"
+                           placeholder="Write your message here..." />
+                    <button type="submit" @onclick="SendMessage"><i class="">send</i></button>
+                </div>
+            </div>
+        </div>
+   
+
+@code {
+
+    public string sender;
+    public string receiver;
+    public string body;
+    public List<Message> Messages { get; set; } = new List<Message>();
+    Message message;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        HttpClient client = new HttpClient();
+
+        try
+        {
+            string uri = "http://localhost:8080/sep3/getMessageBySenderName?sender=" + sender;
+            HttpResponseMessage response = await client.GetAsync(uri);
+
+
+
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+
+
+            Console.WriteLine(responseBody);
+        }
+        catch (HttpRequestException e)
+        {
+            Console.WriteLine("\nException Caught!");
+            Console.WriteLine("Message :{0} ", e.Message);
+        }
+    }
+
+    private async Task SendMessage()
+    {
+
+        HttpClient client = new HttpClient();
+        try
+        {
+            var value = new Dictionary<string, string>
+   {
+                    { "sender", sender},
+                    { "receiver", receiver},
+                    {"body", body }
+           };
+            var content = new FormUrlEncodedContent(value);
+
+            var json = JsonConvert.SerializeObject(value);
+
+            var data = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var url = "http://localhost:8080/sep3/postMessage";
+
+            HttpResponseMessage response = await client.PostAsync(url, data);
+
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine(responseBody);
+        }
+        catch (HttpRequestException e)
+        {
+            Console.WriteLine("\nException Caught!");
+            Console.WriteLine("Message :{0} ", e.Message);
+        }
+
+    }
+
+}

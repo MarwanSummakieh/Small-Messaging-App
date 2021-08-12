@@ -1,0 +1,92 @@
+﻿@page "/login"
+
+@namespace LoginComponent
+
+@inject IHttpClientFactory _clientFactory
+
+@using SEP3_FrontEnd.Authentication
+@using SEP3_FrontEnd.Models 
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<AuthorizeView>
+    <NotAuthorized>
+        <div class="form-group">
+            <label>User name:</label>
+            <input type="text" placeholder="user name" @bind-value="username" />
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" placeholder="password" @bind-value="password" />
+        </div>
+        <div style="color:red">@errorMessage</div>
+
+        <a href="" @onclick="PerformLogin">
+            Login
+        </a>
+    </NotAuthorized>
+    <Authorized>
+        <a href="" @onclick="PerformLogout">
+            Log out
+        </a>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+
+
+    private  string errorMessage;
+    private  string username;
+    private  string password;
+    
+
+    public async Task PerformLogin()
+    {
+        HttpClient client = new HttpClient();
+        try
+        {
+            var value = new Dictionary<string, string>
+           {
+                    { "username", username},
+                    { "password", password}
+           };
+            var content = new FormUrlEncodedContent(value);
+
+            HttpResponseMessage response = await client.PostAsync("http://localhost:8080/sep3/login/user", content);
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            await ((CustomAuthenticationStateProvider) AuthenticationStateProvider).ValidateLogin(username, password);
+            username = "";
+            password = "";
+
+         
+
+
+            Console.WriteLine(responseBody);
+        }
+        catch (HttpRequestException e)
+        {
+            Console.WriteLine("\nException Caught!");
+            Console.WriteLine("Message :{0} ", e.Message);
+        }
+    }
+
+    public async Task PerformLogout()
+    {
+        errorMessage = "";
+        username = "";
+        password = "";
+        try
+        {
+            await  ((CustomAuthenticationStateProvider)AuthenticationStateProvider).Logout();
+            NavigationManager.NavigateTo("/");
+        } catch (Exception e)
+        {
+
+        }
+
+    }
+
+}
